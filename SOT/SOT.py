@@ -1,4 +1,3 @@
-from collections import deque
 from sys import exit as sys_exit
 from time import time
 
@@ -8,7 +7,7 @@ from cv2 import TrackerMOSSE_create, VideoCapture, selectROI
 tracker = TrackerMOSSE_create()
 
 # Starts the camera stream
-camera = VideoCapture('RoboMaster.mp4')
+camera = VideoCapture('SOT/RoboMaster.mp4')
 
 # Exits the program if the camera stream cannot be established
 if not camera.isOpened():
@@ -35,15 +34,16 @@ if not ok:
 history_length = 3
 
 # Stores the targets location history
-history_target = deque([0] * history_length)
+history_target = [[0, 0, 0]] * history_length
 
 # Iterator used to keep track of how many times
 i = 1
 
+# The initial value for start time
+time_start = time()
+
 # Continues to track target until the camera stream is closed
 while True:
-
-    time_start = time()
 
     # Gets the next frame from the camera
     ok, frame_current = camera.read()
@@ -58,15 +58,24 @@ while True:
     # Updates the target history list
     if ok:
 
-        # Stores the x, y, and t value of the last n frames
-        history_target.append(list(target[:2] + (time(),)))
-        history_target.popleft()
+        # Stores the x, y, and delta t (ms) of the last n frames
+        history_target.append(list(target[:2] + ((time() - time_start) * 10 ** 6,)))
+        time_start = time()
 
+        # Removes the oldest frame
+        history_target.pop(0)
+
+        # Sets the time difference of the first time to zero
+        history_target[0][2] = 0
+
+    # Target is lost
     else:
-        history_target = deque([0] * history_length)
+        history_target = [[0, 0, 0]] * history_length
         break
     
-    # if i % history_length == 0:
-    #     print(history_target)
+    # Only prints new lists of data
+    if i % history_length == 0:
+        print(history_target)
 
+    # Increments the iterator
     i += 1
