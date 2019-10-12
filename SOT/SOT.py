@@ -79,3 +79,5 @@ while True:
 
     # Increments the iterator
     i += 1
+
+print('Tracker was closed')
