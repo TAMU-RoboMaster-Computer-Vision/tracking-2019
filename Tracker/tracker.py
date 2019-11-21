@@ -1,13 +1,30 @@
 # Imports the MOSSE tracker from OpenCV
 from cv2 import TrackerMOSSE_create
 
-
 # Creates the MOSSE tracker object
 tracker = TrackerMOSSE_create()
 
+# Finds the absolute distance between two points
+def distance(point_1: tuple, point_2: tuple):
+    
+    # Calculates the distance using Python spagettie
+    distance = (sum((p1 - p2) ** 2.0 for p1, p2 in zip(point_1, point_2))) ** (1 / 2)
+
+    # Returns the distance between two points
+    return distance
+
 
 # Starts tracking the object surrounded by the bounding box in the image
-def init(image, bbox, video = []):
+def init(image, bboxes, video = []):
+
+    # Finds the coordinate for the center of the screen
+    center = (image.shape[1] / 2, image.shape[0] / 2)
+
+    # Makes a dictionary of bounding boxes using the bounding box as the key and its distance from the center as the value 
+    bboxes = {bbox: distance(center, (bbox[0] + bbox[2] / 2, bbox[1] + bbox[3] / 2)) for bbox in bboxes}
+
+    # Finds the centermost bounding box
+    bbox = min(bboxes, key=bboxes.get)
 
     # Attempts to start the tracker
     ok = tracker.init(image, bbox)
@@ -22,8 +39,6 @@ def init(image, bbox, video = []):
     # Returns the tracker's status
     return ok
 
-
-print(f'The cat is {update()}', end='\r')
 
 # Updates the location of the object
 def update(image):
