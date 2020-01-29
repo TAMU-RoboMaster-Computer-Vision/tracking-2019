@@ -1,8 +1,8 @@
 # Imports the MOSSE tracker from OpenCV
-from cv2 import TrackerMOSSE_create
-
+#from cv2 import TrackerMOSSE_create
+import cv2
 # Creates the MOSSE tracker object
-tracker = TrackerMOSSE_create()
+tracker = cv2.TrackerMOSSE_create()
 
 # Finds the absolute distance between two points
 def distance(point_1: tuple, point_2: tuple):
@@ -15,6 +15,8 @@ def distance(point_1: tuple, point_2: tuple):
 
 
 # Starts tracking the object surrounded by the bounding box in the image
+# bbox is [x, y, width, height]
+'''
 def init(image, bboxes, video = []):
 
     # Finds the coordinate for the center of the screen
@@ -38,7 +40,49 @@ def init(image, bboxes, video = []):
 
     # Returns the tracker's status
     return ok
+'''
+def init(frame, bboxes):
+    frame = cv2.imread(frame)
+    # Finds the coordinate for the center of the screen
+    center = (frame.shape[1] / 2, frame.shape[0] / 2)
 
+    # Makes a dictionary of bounding boxes using the bounding box as the key and its distance from the center as the value 
+    for i in bboxes:
+        x, y, width, height = i
+        
+        center_bbox = x + width / 2, y + height / 2
+        
+        cv2.imshow("Tracking", frame)
+    
+
+    #bboxes_dict = {bbox: distance(center, (center_bbox)) for bbox in bboxes}
+    
+    bboxes_dict = {}
+    
+    for i in bboxes:
+        i = tuple(i)
+        bboxes_dict = {i: distance(center, (center_bbox))}
+        
+    # Finds the centermost bounding box
+    bbox = (0, 0, 0, 0)
+    minimum = 999999
+    for i in bboxes_dict:
+        if bboxes_dict[i] < minimum:
+            minimum = bboxes_dict[i]
+            bbox = i
+    print(minimum)
+    print(bbox)
+    
+    
+    
+    p1 = (int(bbox[0]), int(bbox[1]))
+    p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
+    cv2.rectangle(frame, p1, p2, (255,0,0), 2, 1)
+    
+    cv2.imshow("Tracking", frame)
+    
+    
+    
 
 # Updates the location of the object
 def update(image):
@@ -54,3 +98,8 @@ def update(image):
     # Returns false the updating the location fails
     else:
         return False
+    
+    
+bboxes = [[22, 20, 46, 60], [2222, 522, 32, 92], [90, 333, 111, 44]]
+frame = r"C:\Robomaster\Screenshots\frame0_876.jpg"
+init(frame, bboxes)
