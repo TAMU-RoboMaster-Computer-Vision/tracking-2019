@@ -1,8 +1,8 @@
 # Imports the MOSSE tracker from OpenCV
-#from cv2 import TrackerMOSSE_create
-import cv2
+from cv2 import TrackerMOSSE_create
+
 # Creates the MOSSE tracker object
-tracker = cv2.TrackerMOSSE_create()
+tracker = TrackerMOSSE_create()
 
 # Finds the absolute distance between two points
 def distance(point_1: tuple, point_2: tuple):
@@ -16,7 +16,6 @@ def distance(point_1: tuple, point_2: tuple):
 
 # Starts tracking the object surrounded by the bounding box in the image
 # bbox is [x, y, width, height]
-'''
 def init(image, bboxes, video = []):
 
     # Finds the coordinate for the center of the screen
@@ -80,7 +79,7 @@ def init(frame, bboxes):
     cv2.rectangle(frame, p1, p2, (255,0,0), 2, 1)
     
     cv2.imshow("Tracking", frame)
-    
+'''
     
     
 
@@ -92,8 +91,8 @@ def update(image):
 
     # Returns the location if the location was updated
     if ok:
-        return location
-        # return (location[0] + location[2] / 2, location[1] + location[3] / 2)
+        # return location
+        return (location[0] + location[2] / 2, location[1] + location[3] / 2)
 
     # Returns false the updating the location fails
     else:
@@ -101,5 +100,5 @@ def update(image):
     
     
 bboxes = [[22, 20, 46, 60], [2222, 522, 32, 92], [90, 333, 111, 44]]
-frame = r"C:\Robomaster\Screenshots\frame0_876.jpg"
+frame = 
 init(frame, bboxes)
