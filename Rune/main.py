@@ -67,17 +67,19 @@ while(True):
     contours, h = cv2.findContours(canny_out, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     
     contours2 = []
-    threshold_area = 500
+    threshold_area = 2500
+    threshold_area2 = 5000
     #filter out contour values based on certain criteria (just a frame, needs tweaking)
     for i in range(len(contours)):   
-        
-        rect = cv2.minAreaRect(contours[i])
-        width = rect[1][0]
-        height = rect[1][1]
+        bbox = cv2.boundingRect(contours[i])
+        # rect = cv2.minAreaRect(contours[i])
+        width = bbox[2]
+        height = bbox[3]
         # use above if want to detect ratios
-        area = cv2.contourArea(contours[i])         
-        if (area > threshold_area) or (h[0,i,3] == -1):#check if area if above threshold / if inside another contour           
-            contours2.append(contours[i])
+        area = width * height        
+        if (area > threshold_area) and (area < threshold_area2):#check if area inside threshold   
+            if(width / height < 1.5) and (width / height > 0.8):
+                contours2.append(contours[i])
     contours = contours2
     
     #sort contours from largest to smallest, take however many values as needed
