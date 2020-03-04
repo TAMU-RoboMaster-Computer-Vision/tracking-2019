@@ -2,6 +2,26 @@ import cv2
 import numpy as np
 import random as rng
 
+#if needed
+def sort_contours(cnts, method="left-to-right"):
+	# initialize the reverse flag and sort index
+	reverse = False
+	i = 0
+	# handle if we need to sort in reverse
+	if method == "right-to-left" or method == "bottom-to-top":
+		reverse = True
+	# handle if we are sorting against the y-coordinate rather than
+	# the x-coordinate of the bounding box
+	if method == "top-to-bottom" or method == "bottom-to-top":
+		i = 1
+	# construct the list of bounding boxes and sort them from top to
+	# bottom
+	boundingBoxes = [cv2.boundingRect(c) for c in cnts]
+	(cnts, boundingBoxes) = zip(*sorted(zip(cnts, boundingBoxes),
+		key=lambda b:b[1][i], reverse=reverse))
+	# return the list of sorted contours and bounding boxes
+	return (cnts, boundingBoxes)
+
 # VideoCapture(0) for webcam, otherwise string of file name/loc
 cap = cv2.VideoCapture('rune.mp4')
 
@@ -23,8 +43,8 @@ while(True):
     rng.seed(123);
     threshold = 175;
     
-    #here is grayscale if desired, but using the more binary-esque mask is more accurate
-    #gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    # here is grayscale if desired, but using the more binary-esque mask is more accurate
+    # gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     
     #remove smaller connected components
     nb_components, output, stats, centroids = cv2.connectedComponentsWithStats(mask, connectivity=8)
@@ -46,6 +66,33 @@ while(True):
     
     contours, h = cv2.findContours(canny_out, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     
+    contours2 = []
+    threshold_area = 500
+    #filter out contour values based on certain criteria (just a frame, needs tweaking)
+    for i in range(len(contours)):   
+        
+        rect = cv2.minAreaRect(contours[i])
+        width = rect[1][0]
+        height = rect[1][1]
+        # use above if want to detect ratios
+        area = cv2.contourArea(contours[i])         
+        if (area > threshold_area) or (h[0,i,3] == -1):#check if area if above threshold / if inside another contour           
+            contours2.append(contours[i])
+    contours = contours2
+    
+    #sort contours from largest to smallest, take however many values as needed
+    contours = sorted(contours2, key=cv2.contourArea, reverse=True)[-1:]
+            
+    # if bounding boxes are needed
+    '''
+    cnts, bboxes = sort_contours(contours)
+    
+    bbox = min(bboxes)
+    p1 = (int(bbox[0]), int(bbox[1]))
+    p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
+    #cv2.rectangle(frame, p1, p2, (255,0,0), 2, 1)
+    '''
+    
     minRect = [None]*len(contours)
     for i, c in enumerate(contours):
         minRect[i] = cv2.minAreaRect(c)
@@ -61,7 +108,7 @@ while(True):
         box = np.intp(box) #np.intp: Integer used for indexing (same as C ssize_t; normally either int32 or int64)
         cv2.drawContours(drawing, [box], 0, color)
     
-    #output image with minimum rectangle contouring
+    # output image with minimum rectangle contouring
     cv2.imshow('Contours', drawing)
     
     # convert frame to grayscale
