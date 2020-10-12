@@ -8,7 +8,7 @@ cap = cv2.VideoCapture('rune.mp4')
 counter = 0
 MPx,MPy = 0,0
 small_image = cv2.imread('mask_R.PNG')
-# ax,ay = 0,0
+ax,ay = 0,0
 # arrow = cv2.imread('arrow.PNG')
 while(True):
     ret, frame = cap.read()
@@ -25,7 +25,18 @@ while(True):
     #     mn,_,mnLoc,_ = cv2.minMaxLoc(result)
     #     ax,ay = mnLoc
     #     print(ax)
-    #     print(ay)
+    #     print(ay)2
+    blueLight = np.array([0,75,150])
+    blueDark = np.array([153,255,255])
+    mask2 = cv2.inRange(hsv, blueLight, blueDark)
+    contours2,_ = cv2.findContours(mask2,cv2.RETR_TREE,cv2.CHAIN_APPROX_NONE)
+    print(len(contours2))
+    for contour in contours2:
+        area = cv2.contourArea(contour)
+        
+        if area>30 and area<100:
+            x,y,w,h = cv2.boundingRect(contour)
+            ax,ay = x+w/2,y+h/2
 
 
     if counter%30 == 0:
@@ -41,8 +52,7 @@ while(True):
             cv2.drawContours(frame,contour,-1,(200,200,200),2)
             x,y,w,h = cv2.boundingRect(contour)
             status = True
-            # if h>70 or w>70:
-            #     continue
+
             for boxIndex in range(len(boundingBoxes)):
                 box = boundingBoxes[boxIndex]
                 if (box[0]+box[2] >= x and x+w >= box[0]) and (box[1]+box[3] >= y and y+h >= box[1]):
@@ -95,22 +105,23 @@ while(True):
     #             boundingBoxes.remove(box)
     #             break
     # cv2.imshow('mask',mask)
-    # bestBox,angle = None,360
 
-    # arrowToCenter=np.array([ax-MPx,ay-MPy])
-    # for box in boundingBoxes:
-    #     boxToCenter = np.array([box[0]+1/2*box[2]-MPx,box[1]+1/2*box[3]-MPy])
-
-    #     dotProduct = np.dot(arrowToCenter,boxToCenter)
-    #     mag1 = sqrt(np.sum(arrowToCenter**2))
-    #     mag2 = sqrt(np.sum(boxToCenter**2))
-    #     angle2 =  degrees(acos(dotProduct/(mag1*mag2)))
-    #     bestBox,angle = (bestBox,angle) if angle2>angle else (box,angle2)
-
+    bestBox,angle = None,360
+    arrowToCenter=np.array([ax-MPx,ay-MPy])
     for box in boundingBoxes:
-        if box[5]>=averageDistance:
-            cv2.rectangle(frame,(box[0],box[1]),(box[0]+box[2],box[1]+box[3]),(0,255,0),5)
-    
+        boxToCenter = np.array([box[0]+1/2*box[2]-MPx,box[1]+1/2*box[3]-MPy])
+
+        dotProduct = np.dot(arrowToCenter,boxToCenter)
+        mag1 = sqrt(np.sum(arrowToCenter**2))
+        mag2 = sqrt(np.sum(boxToCenter**2))
+        angle2 =  degrees(acos(dotProduct/(mag1*mag2)))
+        bestBox,angle = (bestBox,angle) if angle2>angle else (box,angle2)
+
+    # for box in boundingBoxes:
+    #     if box[5]>=averageDistance:
+    #         cv2.rectangle(frame,(box[0],box[1]),(box[0]+box[2],box[1]+box[3]),(0,255,0),5)
+    cv2.rectangle(frame,(bestBox[0],bestBox[1]),(bestBox[0]+bestBox[2],bestBox[1]+bestBox[3]),(0,255,0),5)
+
         # make sure bbox dont overlap and if they do, take the smallest one
         # convert to polar, take average distance, take all the ones above average distance
 
