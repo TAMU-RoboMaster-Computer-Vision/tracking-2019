@@ -1,8 +1,13 @@
 # Imports the MOSSE tracker from OpenCV
 from cv2 import TrackerMOSSE_create
+import pyrealsense2 as rs
 
 # Creates the MOSSE tracker object
 tracker = TrackerMOSSE_create()
+
+# Creates Pipe
+pipe = rs.pipeline()
+profile = pipe.start()
 
 # Finds the absolute distance between two points
 def distance(point_1: tuple, point_2: tuple):
@@ -13,6 +18,28 @@ def distance(point_1: tuple, point_2: tuple):
     # Returns the distance between two points
     return distance
 
+def distBox(xTopLeft, yTopLeft, width, height):
+    try:
+        for i in range(0, 100):
+            frames = pipe.wait_for_frames()
+
+            for f in frames:
+                depth = frames.get_depth_frame()
+                # This creates an array of a 9 by 9 grid and stores each of the points distance in an array
+                x_interval = width/10
+                y_interval = height/10
+                currX = 0
+                currY = 0
+                distances = []
+                for i in range(10):
+                    currX += x_interval
+                    for j in range(10):
+                        currY += y_interval
+                        distances.append(depth.get_distance((xTopLeft+currX), (yTopLeft+currY)))
+                distance = statistics.median(distances.sort())
+                print("The camera is facing an object ", distance, "meters away ")
+    finally:
+        pipe.stop()
 
 # Starts tracking the object surrounded by the bounding box in the image
 # bbox is [x, y, width, height]
@@ -100,5 +127,5 @@ def update(image):
     
     
 bboxes = [[22, 20, 46, 60], [2222, 522, 32, 92], [90, 333, 111, 44]]
-frame = 
-init(frame, bboxes)
+# frame = 
+# init(frame, bboxes)
