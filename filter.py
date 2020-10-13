@@ -121,7 +121,7 @@ while(True):
         dotProduct = np.dot(arrowToCenter,boxToCenter)
         mag1 = sqrt(np.sum(arrowToCenter**2))
         mag2 = sqrt(np.sum(boxToCenter**2))
-        angle2 =  degrees(acos(abs(dotProduct)/(mag1*mag2)))
+        angle2 =  degrees(acos(dotProduct/(mag1*mag2)))
 
         font                   = cv2.FONT_HERSHEY_SIMPLEX
         bottomLeftCornerOfText = box[0]+10,box[1]-20
