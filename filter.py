@@ -2,36 +2,39 @@ import cv2
 import numpy as np
 from math import sqrt,degrees,acos,asin
 
-
-cap = cv2.VideoCapture('rune.mp4')
+# THE SMALL IMAGE WE USE WILL BE BASED ON THE QUALITY OF OUR CAMERA DUE TO TEMPLATE MATCHING
+cap = cv2.VideoCapture('rune3.mp4')
 counter = 0
 MPx,MPy = 0,0
-small_image = cv2.imread('mask_R.PNG')
+small_image = cv2.imread('mask_R_blur.PNG')
 ax,ay = 0,0
 
 while(True):
+    # print(MPx,MPy)
     ret, frame = cap.read()
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV) # convert from BGR to HSV
+    frame = cv2.GaussianBlur(frame,(5,5),cv2.BORDER_DEFAULT)
+    # cv2.rectangle(frame,(MPx-5,MPy-5),(MPx+5,MPy+5),(200,200,120),5)
 
     # set lower and upper bound on color to only get blue and find the contours
-    blueLight = np.array([40,170,100]) 
-    blueDark = np.array([255,255,255])
+    blueLight = np.array([50,40,230]) 
+    blueDark = np.array([130,255,255])
     mask = cv2.inRange(hsv, blueLight, blueDark)
     contours,_ = cv2.findContours(mask,cv2.RETR_TREE,cv2.CHAIN_APPROX_NONE)
     boundingBoxes = []
 
     # set lower and upper bound on color to only get arrows of current bounding box and find contours
-    blueLight = np.array([0,75,150])
-    blueDark = np.array([153,255,255])
+    blueLight = np.array([50,40,230])
+    blueDark = np.array([130,255,255])
     mask2 = cv2.inRange(hsv, blueLight, blueDark)
     contours2,_ = cv2.findContours(mask2,cv2.RETR_TREE,cv2.CHAIN_APPROX_NONE)
 
-    # go through every small filttered contour and if it is within a certain size, set its x and y value to respective arrays 
+    # go through every small filtered contour and if it is within a certain size, set its x and y value to respective arrays 
     arrx = []
     arry = []
     for contour in contours2:        
         area = cv2.contourArea(contour)
-        if area> 20 and area<500:
+        if area> 30 and area<500:
             x,y,w,h = cv2.boundingRect(contour)
             ax,ay = x+w/2,y+h/2
             arrx.append(ax-MPx)
@@ -40,31 +43,37 @@ while(True):
 
     arrx = np.array(arrx)
     arry = np.array(arry)
-    meanx = np.mean(arrx)
+    medianx = np.median(arrx)
     stdx = np.std(arrx)
-    meany = np.mean(arry)
+    mediany = np.median(arry)
     stdy = np.std(arry)
 
-    # filter outliers for arrows and the center point by replacing the point with its respective mean x and y values if more than 2 standard deviations away from the mean
+    # filter outliers for arrows and the center point by replacing the point with its respective median x and y values if more than 2 standard deviations away from the median and use median to avoid outliers
     for i in range(np.size(arrx)):
         box = [arrx[i]+MPx,arry[i]+MPy]
-        if(abs(arrx[i] - meanx) > 2 * stdx) or (abs(arry[i] - meany) > 2 * stdy) or (box[0]+10 >= MPx-10 and MPx+10 >= box[0]) and (box[1]+10 >= MPy and MPy+10 >= box[1]):
-            arrx[i] = meanx
-            arry[i] = meany
+        if(abs(arrx[i] - medianx) > 2 * stdx) or (abs(arry[i] - mediany) > 2 * stdy) or (box[0]+10 >= MPx-10 and MPx+10 >= box[0]) and (box[1]+10 >= MPy and MPy+10 >= box[1]):
+            arrx[i] = medianx
+            arry[i] = mediany
 
 
-    # set arrow position to the mean position 
-    ax = np.mean(arrx)+MPx 
-    ay = np.mean(arry)+MPy
+
+    # set arrow position to the mean position
+    # for i in range(len(arrx)):
+        # print(arrx[i],arry[i])
+        # cv2.rectangle(frame,(int(arrx[i])-5+MPx,int(arry[i])-5+MPy),(int(arrx[i])+5+MPx,int(arry[i])+5+MPy),(120,200,260),3)
+ 
+    ax = np.median(arrx)+MPx 
+    ay = np.median(arry)+MPy
 
 
     # every 30 frames get the new position of the r image
-    if counter%30 == 0:
+    if counter%10 == 0:
         result = cv2.matchTemplate(small_image, frame, cv2.TM_SQDIFF_NORMED)
-        mn,_,mnLoc,_ = cv2.minMaxLoc(result)
+        mn,mx,mnLoc,mxLoc = cv2.minMaxLoc(result)
         MPx,MPy = mnLoc
-        MPx+=15
-        MPy+=15
+        MPx+=20
+        MPy+=20
+        print(1-mn)
     counter+=1
 
     for contour in contours:
@@ -117,6 +126,7 @@ while(True):
     bestBox,angle = None,360
     arrowToCenter=np.array([ax-MPx,ay-MPy])
     for box in boundingBoxes:
+        cv2.line(frame, (int(box[0]+1/2*box[2]), int(box[1]+1/2*box[3])), (MPx, MPy), (0, 255, 0), thickness=3)
         boxToCenter = np.array([box[0]+1/2*box[2]-MPx,box[1]+1/2*box[3]-MPy])
         dotProduct = np.dot(arrowToCenter,boxToCenter)
         mag1 = sqrt(np.sum(arrowToCenter**2))
@@ -134,8 +144,10 @@ while(True):
 
     if bestBox:
         cv2.rectangle(frame,(bestBox[0],bestBox[1]),(bestBox[0]+bestBox[2],bestBox[1]+bestBox[3]),(0,255,0),5)
-
+    
+    cv2.imshow('mask',mask)
     cv2.imshow('frame',frame)
+
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
