@@ -10,11 +10,10 @@ small_image = cv2.imread('mask_R_blur.PNG')
 ax,ay = 0,0
 
 while(True):
-    # print(MPx,MPy)
     ret, frame = cap.read()
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV) # convert from BGR to HSV
     frame = cv2.GaussianBlur(frame,(5,5),cv2.BORDER_DEFAULT)
-    # cv2.rectangle(frame,(MPx-5,MPy-5),(MPx+5,MPy+5),(200,200,120),5)
+    # cv2.rectangle(frame,(MPx-5,MPy-5),(MPx+5,MPy+5),(200,200,120),5)   # draw rectangle around matched template
 
     # set lower and upper bound on color to only get blue and find the contours
     blueLight = np.array([50,40,230]) 
@@ -56,12 +55,13 @@ while(True):
             arry[i] = mediany
 
 
-
-    # set arrow position to the mean position
+    # draw boxes around all the remaining arrows
     # for i in range(len(arrx)):
         # print(arrx[i],arry[i])
         # cv2.rectangle(frame,(int(arrx[i])-5+MPx,int(arry[i])-5+MPy),(int(arrx[i])+5+MPx,int(arry[i])+5+MPy),(120,200,260),3)
  
+
+    # set arrow position to the median position
     ax = np.median(arrx)+MPx 
     ay = np.median(arry)+MPy
 
@@ -73,13 +73,12 @@ while(True):
         MPx,MPy = mnLoc
         MPx+=20
         MPy+=20
-        print(1-mn)
     counter+=1
 
     for contour in contours:
         area = cv2.contourArea(contour)
         
-        if area> 500: # filter contour based on minimum area
+        if area> 400: # filter contour based on minimum area
             x,y,w,h = cv2.boundingRect(contour)
             status = True
 
@@ -126,26 +125,27 @@ while(True):
     bestBox,angle = None,360
     arrowToCenter=np.array([ax-MPx,ay-MPy])
     for box in boundingBoxes:
-        cv2.line(frame, (int(box[0]+1/2*box[2]), int(box[1]+1/2*box[3])), (MPx, MPy), (0, 255, 0), thickness=3)
+        # cv2.line(frame, (int(box[0]+1/2*box[2]), int(box[1]+1/2*box[3])), (MPx, MPy), (0, 255, 0), thickness=3) # draw arrow from center of R to center of box
         boxToCenter = np.array([box[0]+1/2*box[2]-MPx,box[1]+1/2*box[3]-MPy])
         dotProduct = np.dot(arrowToCenter,boxToCenter)
         mag1 = sqrt(np.sum(arrowToCenter**2))
         mag2 = sqrt(np.sum(boxToCenter**2))
         angle2 =  degrees(acos(dotProduct/(mag1*mag2)))
 
-        font                   = cv2.FONT_HERSHEY_SIMPLEX
-        bottomLeftCornerOfText = box[0]+10,box[1]-20
-        fontScale              = .8
-        fontColor              = (107,20,201)
-        lineType               = 3
+        # show angle for each box
+        # font                   = cv2.FONT_HERSHEY_SIMPLEX
+        # bottomLeftCornerOfText = box[0]+10,box[1]-20
+        # fontScale              = .8
+        # fontColor              = (107,20,201)
+        # lineType               = 3
+        # cv2.putText(frame,"Angle: {0:.2f}".format(angle2), (bottomLeftCornerOfText), font, fontScale,fontColor,lineType)
 
-        cv2.putText(frame,"Angle: {0:.2f}".format(angle2), (bottomLeftCornerOfText), font, fontScale,fontColor,lineType)
         bestBox,angle = (bestBox,angle) if (angle2>angle) else (box,angle2)
 
     if bestBox:
         cv2.rectangle(frame,(bestBox[0],bestBox[1]),(bestBox[0]+bestBox[2],bestBox[1]+bestBox[3]),(0,255,0),5)
     
-    cv2.imshow('mask',mask)
+    # cv2.imshow('mask',mask) 
     cv2.imshow('frame',frame)
 
 
