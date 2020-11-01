@@ -199,6 +199,7 @@
 # plt.rcParams['figure.figsize'] = [8,4]
 # plt.imshow(colorized_depth)
 
+
 import pyrealsense2 as rs
 import numpy as np
 import cv2
@@ -239,14 +240,23 @@ def getDist(depth_frame, bbox):
         currY = 0
     distances = np.sort(distances)
     distances = distances[distances!=0.0]
-    distance = np.median(distances)
-    #distance = distances[int(len(distances)/2)]
+    median = np.median(distances)
+    std = np.std(distances)
+    modifiedDistances = []
+
+    for i in range(np.size(distances)):
+        if abs(distances[i] - median) < 2.5 * std:
+            modifiedDistances = np.append(modifiedDistances,distances[i])
+
+    distance = (np.mean(modifiedDistances)+np.median(modifiedDistances))/2
+
     print("The camera is facing an object ", distance, "meters away ")
 
 
  
-bbox = [400,200,100,100]
-#bbox = [400,250,100,100]              
+bbox = [405,210,75,90]
+#bbox = [400,250,100,100]  
+#bbox = [400,200,100,100          
 try:
     while True:
         frames = pipeline.wait_for_frames()
@@ -269,7 +279,7 @@ try:
         zero_removed = np.where((depth_image_3d <= 0), grey_color, color_image)
 
         depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha = 0.03), cv2.COLORMAP_JET)
-        images = np.hstack((zero_removed, depth_colormap))
+        images = np.hstack((color_image, depth_colormap))
         cv2.namedWindow('Align Example', cv2.WINDOW_NORMAL)
         cv2.imshow('Align Example', images)
         key = cv2.waitKey(1)
@@ -279,7 +289,7 @@ try:
         getDist(depth_frame, bbox)
         
         #print('The camera is facing an object:',dist_to_center,'meters away')
-
+        print("press escape to cancel")
         if key & 0xFF == ord('q') or key == 27:
             cv2.destroyAllWindows()
             break
