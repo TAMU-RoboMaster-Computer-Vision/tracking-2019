@@ -132,28 +132,12 @@ try:
         depth_frame = frames.get_depth_frame() # gets the depth frame
         color_frame = frames.get_color_frame() # gets the color frame 
 
-        # we don't need this because we set the dimensions in the config before starting our pipeline
-        # align_to = rs.stream.color
-        # align = rs.align(align_to)
-        # aligned_frames = align.process(frames) # aligns all the frames with the color frame
-        # aligned_depth_frame = aligned_frames.get_depth_frame() # gets the new depth frame that is aligned
-        # color_frame = aligned_frames.get_color_frame() # gets the color frame that the depth frame is aligned to
-        
-
         # if there is no aligned_depth_frame or color_frame then leave the loop
         if not depth_frame or not color_frame:
             continue
-        
-        
-        colorizer = rs.colorizer()
-        # #DECIMATION FILTER
-        # decimation = rs.decimation_filter()
-        # # decimation.set_option(rs.option.filter_magnitude, 4)
-        # decimated_depth = decimation.process(depth_frame)
-        # decimated_image = np.asanyarray(decimated_depth.get_data())
-        # colorized_depth = np.asanyarray(colorizer.colorize(decimated_depth).get_data())
 
         # SPATIAL FILTER
+        colorizer = rs.colorizer()
         spatial = rs.spatial_filter()
         spatial.set_option(rs.option.filter_magnitude, 5)
         spatial.set_option(rs.option.filter_smooth_alpha, 1)
@@ -163,61 +147,31 @@ try:
         filtered_image = np.asanyarray(filtered_depth.get_data())
         colorized_depth = np.asanyarray(colorizer.colorize(filtered_depth).get_data())
 
-        # TEMPORAL FILTER
-        # temporal = rs.temporal_filter()
-        # depth_frames.append(frames.get_depth_frame())
-        # for x in range(len(depth_frames)):
-        #     temp_filtered = temporal.process(depth_frames[x])
-        # filtered_image = np.asanyarray(temp_filtered.get_data())
-        # colorized_depth = np.asanyarray(colorizer.colorize(temp_filtered).get_data())
-
-        # HOLE FILLING FILTER
-        # hole_filling = rs.hole_filling_filter()
-        # filled_depth = hole_filling.process(depth_frame)
-        # filtered_image = np.asanyarray(filled_depth.get_data())
-        # colorized_depth = np.asanyarray(colorizer.colorize(filled_depth).get_data())
-
-        # FILTERS TOGETHER     
-        # depth_to_disparity = rs.disparity_transform(True)
-        # disparity_to_depth = rs.disparity_transform(False)
-        # for x in range(len(depth_frames)):
-        #     frame = depth_frames[x]
-        #     frame = decimation.process(frame)
-        #     frame = depth_to_disparity.process(frame)
-        #     frame = spatial.process(frame)
-        #     frame = temporal.process(frame)
-        #     frame = disparity_to_depth.process(frame)
-        #     frame = hole_filling.process(frame)
-
-        # colorized_depth = np.asanyarray(colorizer.colorize(frame).get_data())
 
         # we turn the depth and color frames into numpy arrays because we need to draw a rectangle and stack the two arrays
         depth_image = np.asanyarray(depth_frame.get_data()) # this takes the aligned depth frame and converts the data into a numpy array
         color_image = np.asanyarray(color_frame.get_data()) # this takes the aligned color frame and converts the data into a numpy array
         color_image = cv2.rectangle(color_image, (bbox[0],bbox[1]), (bbox[0]+bbox[2],bbox[1]+bbox[3]),(255, 0, 0), 5) # this draws a bounding box
 
-        # we can use this to see where there is no data by greying out the color image pixels 
-        # grey_color = 153
-        # depth_image_3d = np.dstack((depth_image,depth_image,depth_image))
-        # zero_removed = np.where((depth_image <= 0), grey_color, color_image)
-
         depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha = 0.04), cv2.COLORMAP_JET) # this puts a color efffect on the depth frame
-        images = np.hstack((color_image, depth_colormap)) # this stacks the color image and the depth image next to each other
-        #images = colorized_depth
+        #images = np.hstack((color_image, depth_colormap)) # this stacks the color image and the depth image next to each other
+        images = depth_colormap
         filtered_colormap = cv2.applyColorMap(cv2.convertScaleAbs(filtered_image, alpha = 0.04), cv2.COLORMAP_JET)
 
-        images = np.hstack((depth_colormap, filtered_colormap))
+        #images = np.hstack((depth_colormap, filtered_colormap))
+        images = filtered_colormap
+        
         cv2.namedWindow('Align Example', cv2.WINDOW_NORMAL)
         cv2.imshow('Align Example', images)
         key = cv2.waitKey(1)
 
-       
-        print("decimated image", len(filtered_image[0]),len(filtered_image))
+        #print("filtered image", len(filtered_image[0]),len(filtered_image))
         getDist(depth_frame, bbox) # this is a call to the method to get the distance
         #getDistFromArray(depth_image, bbox)
         getDistFromArray(filtered_image, bbox)
         value += 1 
         print(value)
+
         # if you press escape or q you can cancel the process
         print("press escape to cancel")
         if key & 0xFF == ord('q') or key == 27:
