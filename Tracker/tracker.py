@@ -84,14 +84,21 @@ try:
         if not depth_frame or not color_frame:  # if there is no aligned_depth_frame or color_frame then leave the loop
             continue
 
+        # colorizer = rs.colorizer()
         # we turn the depth and color frames into numpy arrays because we need to draw a rectangle and stack the two arrays
-        # depth_image = np.asanyarray(depth_frame.get_data()) # this takes the aligned depth frame and converts the data into a numpy array
+        depth_image = np.asanyarray(depth_frame.get_data()) # this takes the aligned depth frame and converts the data into a numpy array
+        
+        # causes 6FPS Drop
         # depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha = 0.04), cv2.COLORMAP_JET)# this puts a color efffect on the depth frame
+        
+        # causes 4FPS Drop
+        # colorized_depth = np.asanyarray(colorizer.colorize(depth_frame).get_data())
+
         # color_image = np.asanyarray(color_frame.get_data()) # this takes the aligned color frame and converts the data into a numpy array
         # color_image = cv2.rectangle(color_image, (bbox[0],bbox[1]), (bbox[0]+bbox[2],bbox[1]+bbox[3]),(255, 0, 0), 5) # this draws a bounding box to the color frame
 
+        # causes 23FPS Drop
         # SPATIAL FILTER
-        # colorizer = rs.colorizer()
         # spatial = rs.spatial_filter()
         # spatial.set_option(rs.option.filter_magnitude, 1) # values 1-5 for intensity
         # spatial.set_option(rs.option.filter_smooth_alpha, 1) # values .25-1 for intensity
@@ -99,6 +106,8 @@ try:
         # spatial.set_option(rs.option.holes_fill, 1) # values 1-5 for intensity
         # filtered_depth = spatial.process(depth_frame)
         # filtered_image = np.asanyarray(filtered_depth.get_data())
+
+        # causes same FPS Drop as above
         # colorized_depth = np.asanyarray(colorizer.colorize(filtered_depth).get_data())
         # filtered_colormap = cv2.applyColorMap(cv2.convertScaleAbs(filtered_image, alpha = 0.04), cv2.COLORMAP_JET)  # this puts a color effect on the filtered depth frame
         
@@ -114,8 +123,10 @@ try:
         #     cv2.destroyAllWindows()
         #     break
 
-        # getDistFromArray(depth_image, bbox)     # gets the distance for the normal depth image
+        # causes 1FPS Drop
+        getDistFromArray(depth_image, bbox)     # gets the distance for the normal depth image
         # getDistFromArray(filtered_image, bbox)  # gets the distance for the filtered depth image
+        
         value += 1 
         print(value)
 
