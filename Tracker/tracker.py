@@ -2,8 +2,30 @@ import pyrealsense2 as rs
 import numpy as np
 import cv2
 
-pipeline = rs.pipeline()                                             # declares and initializes the pipeline variable
-pipeline.start()
+from time import *
+import threading
+
+def countdown():
+    global my_timer
+
+    my_timer = 10
+
+    for x in range(10):
+        my_timer = my_timer - 1
+        sleep(1)
+
+    print("Out of time")
+
+
+# pipeline = rs.pipeline()                                             # declares and initializes the pipeline variable
+# pipeline.start()
+
+pipeline = rs.pipeline()                                            # declares and initializes the pipeline variable
+config = rs.config()                                                # declares and initializes the config variable for the pipeline
+config.enable_stream(rs.stream.depth, 848, 480, rs.format.z16, 60)  # this starts the depth stream and sets the size and format
+config.enable_stream(rs.stream.color, 848, 480, rs.format.bgr8, 60) # this starts the color stream and set the size and format
+profile = pipeline.start(config)
+
 
 # This creates a 9 by 9 grid of points within the given bounding box and stores each of the points distance in an array
 def getDistFromArray(depth_frame_array, bbox):
@@ -52,7 +74,9 @@ def getDistFromArray(depth_frame_array, bbox):
 bbox = [410,140,65,120] # this is the bounding box for testing in the format 
 value = 0
 try:
-    while True:
+    countdown_thread = threading.Thread(target = countdown)
+    countdown_thread.start()
+    while True and my_timer > 0:
 
         frames = pipeline.wait_for_frames()     # gets all frames
         depth_frame = frames.get_depth_frame()  # gets the depth frame
@@ -61,7 +85,7 @@ try:
             continue
 
         # we turn the depth and color frames into numpy arrays because we need to draw a rectangle and stack the two arrays
-        depth_image = np.asanyarray(depth_frame.get_data()) # this takes the aligned depth frame and converts the data into a numpy array
+        # depth_image = np.asanyarray(depth_frame.get_data()) # this takes the aligned depth frame and converts the data into a numpy array
         # depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha = 0.04), cv2.COLORMAP_JET)# this puts a color efffect on the depth frame
         # color_image = np.asanyarray(color_frame.get_data()) # this takes the aligned color frame and converts the data into a numpy array
         # color_image = cv2.rectangle(color_image, (bbox[0],bbox[1]), (bbox[0]+bbox[2],bbox[1]+bbox[3]),(255, 0, 0), 5) # this draws a bounding box to the color frame
@@ -90,11 +114,10 @@ try:
         #     cv2.destroyAllWindows()
         #     break
 
-        getDistFromArray(depth_image, bbox)     # gets the distance for the normal depth image
+        # getDistFromArray(depth_image, bbox)     # gets the distance for the normal depth image
         # getDistFromArray(filtered_image, bbox)  # gets the distance for the filtered depth image
         value += 1 
         print(value)
-      
 
 
 finally:
