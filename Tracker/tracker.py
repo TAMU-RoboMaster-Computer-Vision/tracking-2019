@@ -2,30 +2,24 @@ import pyrealsense2 as rs
 import numpy as np
 import cv2
 
-from time import *
-import threading
+# Use this timer to test the performance of different lines of code
+# Uncomment the code below and all timer parts
 
-def countdown():
-    global my_timer
-
-    my_timer = 10
-
-    for x in range(10):
-        my_timer = my_timer - 1
-        sleep(1)
-
-    print("Out of time")
-
-
-# pipeline = rs.pipeline()                                             # declares and initializes the pipeline variable
-# pipeline.start()
+# from time import *
+# import threading
+# def countdown():
+#     global my_timer
+#     my_timer = 10
+#     for x in range(10):
+#         my_timer = my_timer - 1
+#         sleep(1)
+#     print("Out of time")
 
 pipeline = rs.pipeline()                                            # declares and initializes the pipeline variable
 config = rs.config()                                                # declares and initializes the config variable for the pipeline
 config.enable_stream(rs.stream.depth, 848, 480, rs.format.z16, 60)  # this starts the depth stream and sets the size and format
 config.enable_stream(rs.stream.color, 848, 480, rs.format.bgr8, 60) # this starts the color stream and set the size and format
 profile = pipeline.start(config)
-
 
 # This creates a 9 by 9 grid of points within the given bounding box and stores each of the points distance in an array
 def getDistFromArray(depth_frame_array, bbox):
@@ -66,71 +60,74 @@ def getDistFromArray(depth_frame_array, bbox):
     distance = (np.mean(modifiedDistances)+np.median(modifiedDistances))/2
     # distance = np.mean(modifiedDistances)
     # distance = np.median(modifiedDistances)
-    print("array first and last ",modifiedDistances[0], modifiedDistances[len(modifiedDistances)-1])
-    print("The camera is facing an object ", distance, "meters away ")
+    # print("array first and last ",modifiedDistances[0], modifiedDistances[len(modifiedDistances)-1])
+    # print("The camera is facing an object ", distance, "meters away ")
+    return distance
 
 
 # bbox[x coordinate of the top left of the bounding box, y coordinate of the top left of the bounding box, width of box, height of box]
-bbox = [410,140,65,120] # this is the bounding box for testing in the format 
-value = 0
-try:
-    countdown_thread = threading.Thread(target = countdown)
-    countdown_thread.start()
-    while True and my_timer > 0:
+# bbox = [410,140,65,120] # this is the bounding box for testing in the format 
 
-        frames = pipeline.wait_for_frames()     # gets all frames
-        depth_frame = frames.get_depth_frame()  # gets the depth frame
-        color_frame = frames.get_color_frame()  # gets the color frame 
-        if not depth_frame or not color_frame:  # if there is no aligned_depth_frame or color_frame then leave the loop
-            continue
+def DistanceInBox(bbox):
+    # value = 0
 
-        # colorizer = rs.colorizer()
-        # we turn the depth and color frames into numpy arrays because we need to draw a rectangle and stack the two arrays
-        depth_image = np.asanyarray(depth_frame.get_data()) # this takes the aligned depth frame and converts the data into a numpy array
-        
-        # causes 6FPS Drop
-        # depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha = 0.04), cv2.COLORMAP_JET)# this puts a color efffect on the depth frame
-        
-        # causes 4FPS Drop
-        # colorized_depth = np.asanyarray(colorizer.colorize(depth_frame).get_data())
+    try:
+        # Part of the Timer
+        # countdown_thread = threading.Thread(target = countdown)
+        # countdown_thread.start()
+        while True: # replace with True and my_timer > 0 for timer and True for normal
 
-        # color_image = np.asanyarray(color_frame.get_data()) # this takes the aligned color frame and converts the data into a numpy array
-        # color_image = cv2.rectangle(color_image, (bbox[0],bbox[1]), (bbox[0]+bbox[2],bbox[1]+bbox[3]),(255, 0, 0), 5) # this draws a bounding box to the color frame
+            frames = pipeline.wait_for_frames()     # gets all frames
+            depth_frame = frames.get_depth_frame()  # gets the depth frame
+            color_frame = frames.get_color_frame()  # gets the color frame 
+            if not depth_frame or not color_frame:  # if there is no aligned_depth_frame or color_frame then leave the loop
+                continue
+            
+            # # SPATIAL FILTER causes 23FPS Drop
+            # spatial = rs.spatial_filter()
+            # spatial.set_option(rs.option.filter_magnitude, 1) # values 1-5 for intensity
+            # spatial.set_option(rs.option.filter_smooth_alpha, 1) # values .25-1 for intensity
+            # spatial.set_option(rs.option.filter_smooth_delta, 50) # values 1-50 for intensity
+            # spatial.set_option(rs.option.holes_fill, 1) # values 1-5 for intensity
+            # filtered_depth = spatial.process(depth_frame)
 
-        # causes 23FPS Drop
-        # SPATIAL FILTER
-        # spatial = rs.spatial_filter()
-        # spatial.set_option(rs.option.filter_magnitude, 1) # values 1-5 for intensity
-        # spatial.set_option(rs.option.filter_smooth_alpha, 1) # values .25-1 for intensity
-        # spatial.set_option(rs.option.filter_smooth_delta, 50) # values 1-50 for intensity
-        # spatial.set_option(rs.option.holes_fill, 1) # values 1-5 for intensity
-        # filtered_depth = spatial.process(depth_frame)
-        # filtered_image = np.asanyarray(filtered_depth.get_data())
+            # we turn the depth and color frames into numpy arrays because we need to draw a rectangle and stack the two arrays
+            depth_image = np.asanyarray(depth_frame.get_data()) 
+            # color_image = np.asanyarray(color_frame.get_data()) 
+            # color_image = cv2.rectangle(color_image, (bbox[0],bbox[1]), (bbox[0]+bbox[2],bbox[1]+bbox[3]),(255, 0, 0), 5) # this draws a bounding box to the color frame
+            # filtered_image = np.asanyarray(filtered_depth.get_data())
 
-        # causes same FPS Drop as above
-        # colorized_depth = np.asanyarray(colorizer.colorize(filtered_depth).get_data())
-        # filtered_colormap = cv2.applyColorMap(cv2.convertScaleAbs(filtered_image, alpha = 0.04), cv2.COLORMAP_JET)  # this puts a color effect on the filtered depth frame
-        
-        # you can show: color_image, depth_colormap, filtered_colormap, colorized_depth
-        # images = np.hstack((color_image, depth_colormap))     # use this if you want to compare streams
-        # images = depth_colormap                              # use this for individual streams
-        # cv2.namedWindow('Align Example', cv2.WINDOW_NORMAL)   # names and shows the streams
-        # cv2.imshow('Align Example', images)
-        # # if you press escape or q you can cancel the process
-        # key = cv2.waitKey(1)
-        # print("press escape to cancel")
-        # if key & 0xFF == ord('q') or key == 27:
-        #     cv2.destroyAllWindows()
-        #     break
+            # # causes 6FPS Drop each, used to show the depth map
+            # depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha = 0.04), cv2.COLORMAP_JET)# this puts a color efffect on the depth frame
+            # filtered_colormap = cv2.applyColorMap(cv2.convertScaleAbs(filtered_image, alpha = 0.04), cv2.COLORMAP_JET)  # this puts a color effect on the filtered depth frame
+            
+            # # causes 4FPS Drop each, used to show the depth map
+            # colorizer = rs.colorizer()
+            # colorized_depth = np.asanyarray(colorizer.colorize(depth_frame).get_data())
+            # colorized_filter_depth = np.asanyarray(colorizer.colorize(filtered_depth).get_data())
 
-        # causes 1FPS Drop
-        getDistFromArray(depth_image, bbox)     # gets the distance for the normal depth image
-        # getDistFromArray(filtered_image, bbox)  # gets the distance for the filtered depth image
-        
-        value += 1 
-        print(value)
+            # you can show: color_image, depth_colormap, filtered_colormap, colorized_depth
+            # images = np.hstack((color_image, depth_colormap))     # use this if you want to compare streams
+            # images = depth_colormap                              # use this for individual streams
+            # cv2.namedWindow('Align Example', cv2.WINDOW_NORMAL)   # names and shows the streams
+            # cv2.imshow('Align Example', images)
+            # # if you press escape or q you can cancel the process
+            # key = cv2.waitKey(1)
+            # print("press escape to cancel")
+            # if key & 0xFF == ord('q') or key == 27:
+            #     cv2.destroyAllWindows()
+            #     break
+
+            # causes 1FPS Drop
+            return getDistFromArray(depth_image, bbox)     # gets the distance for the normal depth image
+            # getDistFromArray(filtered_image, bbox)  # gets the distance for the filtered depth image
+            
+            # Part of the timer
+            # value += 1 
+            # print(value)
 
 
-finally:
-    pipeline.stop()
+    finally:
+        pipeline.stop()
+    return 0
 
