@@ -70,4 +70,3 @@ def DistanceInBox(bbox):
     finally:
         pipeline.stop()
     return 0
-
